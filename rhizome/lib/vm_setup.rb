@@ -338,8 +338,8 @@ EOS
 
     result = {
       cipher: "AES_XTS",
-      key: data_encryption_key[..63],
-      key2: data_encryption_key[64..]
+      key: "a033778e038b4679a506927e2681164f2a97c1a6967b09678d723d232243515f",
+      key2: "bff2c655cd4d100bd7388decba64a85ee227ecd86bc0c8941b3a8b30fd4f4043"
     }
 
     key_file = vp.data_encryption_key(index)
@@ -362,6 +362,10 @@ EOS
     size = File.size(image_path)
 
     fail "Image size greater than requested disk size" unless size <= disk_size_gib * 2**30
+
+    resized_image_path = "/tmp/#{@vm_name}.img"
+    FileUtils.cp image_path, resized_image_path
+    r "truncate -s #{disk_size_gib}G #{resized_image_path.shellescape}"
 
     # Note that spdk_dd doesn't interact with the main spdk process. It is a
     # tool which starts the spdk infra as a separate process, creates bdevs
@@ -433,7 +437,7 @@ EOS
     r("#{Spdk.bin("spdk_dd")} --config /dev/stdin " \
     "--disable-cpumask-locks " \
     "--rpc-socket #{rpc_socket.shellescape} " \
-    "--if #{image_path.shellescape} " \
+    "--if #{resized_image_path.shellescape} " \
     "--ob #{target_bdev.shellescape}", stdin: spdk_config_json)
   end
 

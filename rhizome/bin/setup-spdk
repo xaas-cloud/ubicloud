@@ -5,6 +5,9 @@ require_relative "../lib/common"
 require_relative "../lib/spdk"
 require "fileutils"
 
+# enable nbd
+r "modprobe nbd"
+
 # spdk dependencies
 r "apt-get -y install libaio-dev libssl-dev libnuma-dev libjson-c-dev uuid-dev libiscsi-dev"
 
@@ -50,8 +53,8 @@ ProtectKernelTunables=yes
 ProtectControlGroups=yes
 ProtectHome=no
 NoNewPrivileges=yes
-User=spdk
-Group=spdk
+User=root
+Group=root
 SPDK_SERVICE
 
 File.write("/etc/systemd/system/spdk.service", spdk_service)

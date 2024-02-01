@@ -7,6 +7,33 @@ class Prog::DnsZone::DnsZoneNexus < Prog::Base
 
   semaphore :refresh_dns_servers
 
+  def self.assemble(project_id:, name:, vm_count:, location:, vm_size:, storage_size_gib:)
+    unless Project[project_id]
+      fail "No existing project"
+    end
+
+    DB.transaction do
+      dns_zone = DnsZone.create_with_id(project_id: project_id, name: name)
+
+      vm_count.times do |i|
+        ds_strand = Prog::DnsZone::DnsServerNexus.assemble(dns_zone.id)
+        dns_zone.add_dns_server(ds_strand.dns_server)
+      end
+
+      Strand.create(prog: "DnsZone::DnsZoneNexus", label: "wait_servers") { _1.id = dns_zone.id }
+    end
+  end
+
+  def before_run
+    when_refresh_dns_servers_set? do
+      hop_refresh_dns_servers
+    end
+  end
+
+  label def wait_servers
+    nap 5 unless dns_zone.dns_servers.map(&:strand).all? { _1.label == "wait" }
+  end
+
   label def wait
     if dns_zone.last_purged_at < Time.now - 60 * 60 * 1 # ~1 hour
       register_deadline(:wait, 5 * 60)

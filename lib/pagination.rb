@@ -5,16 +5,20 @@ module Pagination
     # TODO: Should we try chainable pagination like sequel's offset based pagination
     def paginated_result(cursor, page_size, order_column)
       model = @opts[:model]
-      page_size ||= 10
+      page_size = min(page_size || 10, 100).to_i
+      order_column_sym = (order_column || "id").to_sym
+
+      fail Validation::ValidationFailed.new({cursor: "No resource exist with the given id #{cursor}"}) if cursor && model.from_ubid(cursor).nil?
+      fail Validation::ValidationFailed.new({order_column: "Given order column does not exist for the resource"}) unless model.columns.include?(order_column_sym)
 
       if cursor
-        cursor_order_column = model.from_ubid(cursor).send(order_column)
-        page_records = where(Sequel.qualify(model.table_name, order_column.to_sym) >= cursor_order_column).limit(page_size.to_i + 1).all
+        cursor_order_column_value = model.from_ubid(cursor).send(order_column)
+        page_records = where(Sequel.qualify(model.table_name, order_column_sym) >= cursor_order_column_value).order(order_column_sym).limit(page_size + 1).all
       else
-        page_records = limit(page_size.to_i + 1).all
+        page_records = order(order_column_sym).limit(page_size + 1).all
       end
 
-      if page_records.length > page_size.to_i
+      if page_records.length > page_size
         next_cursor = page_records.last&.ubid
         page_records.pop
       end

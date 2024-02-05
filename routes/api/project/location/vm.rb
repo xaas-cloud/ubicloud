@@ -5,11 +5,11 @@ class CloverApi
     @serializer = Serializers::Api::Vm
 
     r.get true do
-      cursor = r.params["cursor"]
-      page_size = r.params["page-size"]
-      order_column = r.params["order-column"] ||= "id"
-
-      result = @project.vms_dataset.where(location: @location).authorized(@current_user.id, "Vm:view").order(order_column.to_sym).paginated_result(cursor, page_size, order_column)
+      result = @project.vms_dataset.where(location: @location).authorized(@current_user.id, "Vm:view").paginated_result(
+        r.params["cursor"],
+        r.params["page-size"],
+        r.params["order-column"]
+      )
 
       {
         values: serialize(result[:records]),

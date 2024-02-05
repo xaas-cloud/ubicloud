@@ -6,11 +6,11 @@ class CloverApi
 
     # TODO: Validation
     r.get true do
-      page_size = r.params["page-size"]
-      cursor = r.params["cursor"]
-      order_column = r.params["order-column"] ||= "id"
-
-      result = @project.private_subnets_dataset.authorized(@current_user.id, "PrivateSubnet:view").order(order_column.to_sym).paginated_result(cursor, page_size, order_column)
+      result = @project.private_subnets_dataset.authorized(@current_user.id, "PrivateSubnet:view").paginated_result(
+        r.params["cursor"],
+        r.params["page-size"],
+        r.params["order-column"]
+      )
 
       {
         values: serialize(result[:records]),

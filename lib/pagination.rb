@@ -5,7 +5,7 @@ module Pagination
     # TODO: Should we try chainable pagination like sequel's offset based pagination
     def paginated_result(cursor, page_size, order_column)
       model = @opts[:model]
-      page_size = min(page_size || 10, 100).to_i
+      page_size = [page_size || 10, 100].min.to_i
       order_column_sym = (order_column || "id").to_sym
 
       fail Validation::ValidationFailed.new({cursor: "No resource exist with the given id #{cursor}"}) if cursor && model.from_ubid(cursor).nil?

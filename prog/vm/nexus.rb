@@ -175,24 +175,41 @@ class Prog::Vm::Nexus < Prog::Base
 
     device_allocation_query = if frame["distinct_storage_devices"]
       <<-SQL
-WITH AvailableStorageDevices AS (
+WITH default_host_suitable_devices AS (
+  SELECT
+      vm_host_id
+  FROM
+      storage_device
+  WHERE
+      storage_device.enabled
+      AND
+      storage_device.name = 'DEFAULT'
+      AND
+      storage_device.available_storage_gib >= #{frame["storage_volumes"].find { |v| v["boot"] }["size_gib"]}
+),
+AvailableStorageDevices AS (
     SELECT
         id,
         vm_host_id,
         available_storage_gib,
+        name,
         ROW_NUMBER() OVER (PARTITION BY vm_host_id ORDER BY available_storage_gib DESC) AS device_rank
     FROM
         storage_device
     WHERE
-        storage_device.enabled
+        storage_device.enabled AND
+        storage_device.vm_host_id IN (
+            SELECT vm_host_id FROM default_host_suitable_devices
+        )
 ),
 VolumeAllocation AS (
     SELECT
         size_gib,
+        boot,
         ROW_NUMBER() OVER (ORDER BY size_gib DESC) AS volume_rank
     FROM (
-        VALUES #{frame["storage_volumes"].map { |v| "(#{v["size_gib"]})" }.join(", ")}
-    ) AS Volumes (size_gib)
+        VALUES #{frame["storage_volumes"].map { |v| "(#{v["size_gib"]}, #{v["boot"]})" }.join(", ")}
+    ) AS Volumes (size_gib, boot)
 ),
 DeviceVolumeMatch AS (
     SELECT
@@ -201,6 +218,7 @@ DeviceVolumeMatch AS (
     FROM
         AvailableStorageDevices asd
         INNER JOIN VolumeAllocation va ON asd.available_storage_gib >= va.size_gib
+    WHERE (va.boot AND asd.name = 'DEFAULT') OR (NOT va.boot AND asd.name != 'DEFAULT')
     GROUP BY vm_host_id
     HAVING COUNT(DISTINCT asd.id) >= (SELECT COUNT(*) FROM VolumeAllocation)
 )

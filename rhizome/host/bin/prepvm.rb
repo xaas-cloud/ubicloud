@@ -18,7 +18,6 @@ end
 params_json = File.read(params_path)
 params = JSON.parse(params_json)
 
-
 require "fileutils"
 require_relative "../../common/lib/util"
 require_relative "../lib/vm_setup"

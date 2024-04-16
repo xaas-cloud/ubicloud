@@ -8,5 +8,8 @@ end
 
 require_relative "../../common/lib/util"
 require_relative "../lib/vm_setup"
+require "json"
 
-VmSetup.new(vm_name).purge
+params_json = File.read(VmPath.new(vm_name).prep_json)
+params = JSON.parse(params_json)
+VmSetup.new(params).purge

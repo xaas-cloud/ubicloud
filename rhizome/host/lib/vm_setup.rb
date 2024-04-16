@@ -15,8 +15,25 @@ require_relative "storage_volume"
 class VmSetup
   Nic = Struct.new(:net6, :net4, :tap, :mac)
 
-  def initialize(vm_name)
-    @vm_name = vm_name
+  def initialize(params)
+    @vm_name = params.fetch("vm_name")
+    # "Global Unicast" subnet, i.e. a subnet for exchanging packets with
+    # the internet.
+    @gua = params.fetch("public_ipv6")
+    @ip4 = params.fetch("public_ipv4")
+    @local_ip4 = params.fetch("local_ipv4")
+    @unix_user = params.fetch("unix_user")
+    @ssh_public_key = params.fetch("ssh_public_key")
+    @nics = params.fetch("nics").map { |args| VmSetup::Nic.new(*args) }.freeze
+    @boot_image = params.fetch("boot_image")
+    @max_vcpus = params.fetch("max_vcpus")
+    @cpu_topology = params.fetch("cpu_topology")
+    @mem_gib = params.fetch("mem_gib")
+    @ndp_needed = params.fetch("ndp_needed", false)
+    @storage_volumes = params.fetch("storage_volumes")
+    @swap_size_bytes = params["swap_size_bytes"]
+  rescue KeyError => e
+    raise "Needed #{e.key} in parameters json"
   end
 
   def q_vm
@@ -43,19 +60,19 @@ class VmSetup
     @vp ||= VmPath.new(@vm_name)
   end
 
-  def prep(unix_user, public_key, nics, gua, ip4, local_ip4, boot_image, max_vcpus, cpu_topology, mem_gib, ndp_needed, storage_volumes, storage_secrets, swap_size_bytes)
-    setup_networking(false, gua, ip4, local_ip4, nics, ndp_needed, multiqueue: max_vcpus > 1)
-    cloudinit(unix_user, public_key, nics, swap_size_bytes)
-    download_boot_image(boot_image)
-    storage_params = storage(storage_volumes, storage_secrets, true)
-    hugepages(mem_gib)
-    install_systemd_unit(max_vcpus, cpu_topology, mem_gib, storage_params, nics)
+  def prep(storage_secrets)
+    setup_networking(false, @gua, @ip4, @local_ip4, @nics, @ndp_needed, multiqueue: @max_vcpus > 1)
+    cloudinit(@unix_user, @ssh_public_key, @nics, @swap_size_bytes)
+    download_boot_image(@boot_image)
+    storage_params = storage(@storage_volumes, storage_secrets, true)
+    hugepages(@mem_gib)
+    install_systemd_unit(@max_vcpus, @cpu_topology, @mem_gib, storage_params, @nics)
   end
 
-  def recreate_unpersisted(gua, ip4, local_ip4, nics, mem_gib, ndp_needed, storage_params, storage_secrets, multiqueue:)
-    setup_networking(true, gua, ip4, local_ip4, nics, ndp_needed, multiqueue: multiqueue)
-    hugepages(mem_gib)
-    storage(storage_params, storage_secrets, false)
+  def recreate_unpersisted(storage_secrets)
+    setup_networking(true, @gua, @ip4, @local_ip4, @nics, @ndp_needed, multiqueue: @max_vcpus > 1)
+    hugepages(@mem_gib)
+    storage(@storage_volumes, storage_secrets, false)
   end
 
   def setup_networking(skip_persisted, gua, ip4, local_ip4, nics, ndp_needed, multiqueue:)

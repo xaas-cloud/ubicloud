@@ -1,0 +1,40 @@
+#!/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require_relative "../lib/vm_setup"
+
+unless (verb = ARGV.shift)
+  puts "expected action as argument"
+  exit 1
+end
+
+unless (params_path = ARGV.shift)
+  puts "expected path to prep.json as argument"
+  exit 1
+end
+
+params_json = File.read(params_path)
+params = JSON.parse(params_json)
+vm_setup = VmSetup.new(params)
+
+case verb
+when "prep"
+  secrets = JSON.parse($stdin.read)
+
+  unless (storage_secrets = secrets["storage"])
+    puts "need storage secrets in secrets json"
+    exit 1
+  end
+  vm_setup.prep(storage_secrets)
+when "recreate-unpersisted"
+  secrets = JSON.parse($stdin.read)
+
+  unless (storage_secrets = secrets["storage"])
+    puts "need storage secrets in secrets json"
+    exit 1
+  end
+  vm_setup.recreate_unpersisted(storage_secrets)
+when "delete"
+  vm_setup.purge
+end

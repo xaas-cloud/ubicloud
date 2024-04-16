@@ -5,7 +5,24 @@ require "openssl"
 require "base64"
 
 RSpec.describe VmSetup do
-  subject(:vs) { described_class.new("test") }
+  subject(:vs) {
+    described_class.new({
+      "vm_name" => "test",
+      "public_ipv6" => "2a01:4f9:3030:3030:3030::/79",
+      "public_ipv4" => "95.111.11.10/32",
+      "local_ipv4" => "169.254.238.32/32",
+      "unix_user" => "ubi",
+      "ssh_public_key" => "public_key",
+      "nics" => [],
+      "boot_image" => "ubuntu-jammy",
+      "max_vcpus" => 8,
+      "cpu_topology" => "2:30:1:1",
+      "mem_gib" => 8,
+      "ndp_needed" => false,
+      "storage_volumes" => ["volume1", "volume2"],
+      "swap_size_bytes" => nil
+    })
+  }
 
   def key_wrapping_secrets
     key_wrapping_algorithm = "aes-256-gcm"
@@ -194,11 +211,11 @@ RSpec.describe VmSetup do
 
   describe "#recreate_unpersisted" do
     it "can recreate unpersisted state" do
-      expect(vs).to receive(:setup_networking).with(true, "gua", "ip4", "local_ip4", "nics", false, multiqueue: true)
-      expect(vs).to receive(:hugepages).with(4)
-      expect(vs).to receive(:storage).with("storage_params", "storage_secrets", false)
+      expect(vs).to receive(:setup_networking).with(true, "2a01:4f9:3030:3030:3030::/79", "95.111.11.10/32", "169.254.238.32/32", [], false, multiqueue: true)
+      expect(vs).to receive(:hugepages).with(8)
+      expect(vs).to receive(:storage).with(["volume1", "volume2"], "storage_secrets", false)
 
-      vs.recreate_unpersisted("gua", "ip4", "local_ip4", "nics", 4, false, "storage_params", "storage_secrets", multiqueue: true)
+      vs.recreate_unpersisted("storage_secrets")
     end
   end
 

@@ -105,6 +105,10 @@ module Config
   # Spdk
   override :spdk_version, "v23.09-ubi-0.2"
 
+  # Boot Images
+  override :default_boot_image_name, "ubuntu-jammy", string
+  override :default_boot_image_version, "20240319", string
+
   # Pagerduty
   optional :pagerduty_key, string, clear: true
   optional :pagerduty_log_link, string

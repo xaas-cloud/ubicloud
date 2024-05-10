@@ -199,7 +199,7 @@ RSpec.describe Prog::Vm::HostNexus do
   end
 
   describe "#wait_setup_spdk" do
-    it "hops to prep_reboot if all tasks are done" do
+    it "hops to download_boot_image if all tasks are done" do
       expect(nx).to receive(:reap).and_return([])
       expect(nx).to receive(:leaf?).and_return true
       vmh = instance_double(VmHost)
@@ -212,7 +212,7 @@ RSpec.describe Prog::Vm::HostNexus do
       allow(nx).to receive(:vm_host).and_return(vmh)
       expect(vmh).to receive(:update).with({used_cores: 2})
 
-      expect { nx.wait_setup_spdk }.to hop("prep_reboot")
+      expect { nx.wait_setup_spdk }.to hop("download_boot_image")
     end
 
     it "donates its time if child strands are still running" do
@@ -221,6 +221,30 @@ RSpec.describe Prog::Vm::HostNexus do
       expect(nx).to receive(:donate).and_call_original
 
       expect { nx.wait_setup_spdk }.to nap(1)
+    end
+  end
+
+  describe "#download_boot_image" do
+    it "buds the download boot image program" do
+      expect(nx).to receive(:bud).with(Prog::DownloadBootImage, {"image_name" => Config.default_boot_image_name, "version" => Config.default_boot_image_version})
+      expect { nx.download_boot_image }.to hop("wait_download_boot_image")
+    end
+  end
+
+  describe "#wait_download_boot_image" do
+    it "hops to prep_reboot if all tasks are done" do
+      expect(nx).to receive(:reap).and_return([])
+      expect(nx).to receive(:leaf?).and_return true
+
+      expect { nx.wait_download_boot_image }.to hop("prep_reboot")
+    end
+
+    it "donates its time if child strands are still running" do
+      expect(nx).to receive(:reap).and_return([])
+      expect(nx).to receive(:leaf?).and_return false
+      expect(nx).to receive(:donate).and_call_original
+
+      expect { nx.wait_download_boot_image }.to nap(1)
     end
   end
 

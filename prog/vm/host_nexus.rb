@@ -117,8 +117,19 @@ class Prog::Vm::HostNexus < Prog::Base
       spdk_installation = vm_host.spdk_installations.first
       spdk_cores = (spdk_installation.cpu_count * vm_host.total_cores) / vm_host.total_cpus
       vm_host.update(used_cores: spdk_cores)
-      hop_prep_reboot
+      hop_download_boot_image
     end
+    donate
+  end
+
+  label def download_boot_image
+    bud Prog::DownloadBootImage, {"image_name" => Config.default_boot_image_name, "version" => Config.default_boot_image_version}
+    hop_wait_download_boot_image
+  end
+
+  label def wait_download_boot_image
+    reap
+    hop_prep_reboot if leaf?
     donate
   end
 

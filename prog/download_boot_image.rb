@@ -61,25 +61,27 @@ class Prog::DownloadBootImage < Prog::Base
 
   label def download
     q_daemon_name = "download_#{image_name}_#{version}".shellescape
-    case sshable.cmd("common/bin/daemonizer --check #{q_daemon_name}")
-    when "Succeeded"
-      sshable.cmd("common/bin/daemonizer --clean #{q_daemon_name}")
-      hop_update_available_storage_space
-    when "NotStarted"
-      params_json = {
-        image_name: image_name,
-        url: url,
-        version: version,
-        sha256sum: sha256_sum
-      }.to_json
-      sshable.cmd("common/bin/daemonizer 'host/bin/download-boot-image #{params_json.shellescape}' #{q_daemon_name}", stdin: Config.ubicloud_images_blob_storage_certs)
-    when "Failed"
-      BootImage.where(vm_host_id: vm_host.id, name: image_name, version: version).destroy
-      sshable.cmd("common/bin/daemonizer --log #{q_daemon_name}")
-      fail "Failed to download '#{image_name}' image on #{vm_host}"
-    end
+    sshable.cmd("host/bin/download-boot-image #{params_json.shellescape}")
+    hop_update_available_storage_space
+    # case sshable.cmd("common/bin/daemonizer --check #{q_daemon_name}")
+    # when "Succeeded"
+    #   sshable.cmd("common/bin/daemonizer --clean #{q_daemon_name}")
+    #   hop_update_available_storage_space
+    # when "NotStarted"
+    #   params_json = {
+    #     image_name: image_name,
+    #     url: url,
+    #     version: version,
+    #     sha256sum: sha256_sum
+    #   }.to_json
+    #   sshable.cmd("common/bin/daemonizer 'host/bin/download-boot-image #{params_json.shellescape}' #{q_daemon_name}", stdin: Config.ubicloud_images_blob_storage_certs)
+    # when "Failed"
+    #   BootImage.where(vm_host_id: vm_host.id, name: image_name, version: version).destroy
+    #   sshable.cmd("common/bin/daemonizer --log #{q_daemon_name}")
+    #   fail "Failed to download '#{image_name}' image on #{vm_host}"
+    # end
 
-    nap 15
+    # nap 15
   end
 
   label def update_available_storage_space

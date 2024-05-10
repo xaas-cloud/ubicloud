@@ -40,6 +40,10 @@ if ARGV[0] == "--check"
 elsif ARGV[0] == "--clean"
   name = ARGV[1]
   clean(name)
+elsif ARGV[0] == "--log"
+  name = ARGV[1]
+  r "cat var/log/#{name}.stdout"
+  r "cat var/log/#{name}.stderr"
 else
   command = ARGV[0]
   name = ARGV[1]

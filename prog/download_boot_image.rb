@@ -61,6 +61,12 @@ class Prog::DownloadBootImage < Prog::Base
 
   label def download
     q_daemon_name = "download_#{image_name}_#{version}".shellescape
+    params_json = {
+          image_name: image_name,
+          url: url,
+          version: version,
+          sha256sum: sha256_sum
+        }.to_json
     sshable.cmd("host/bin/download-boot-image #{params_json.shellescape}")
     hop_update_available_storage_space
     # case sshable.cmd("common/bin/daemonizer --check #{q_daemon_name}")

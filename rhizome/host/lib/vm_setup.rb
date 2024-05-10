@@ -47,7 +47,6 @@ class VmSetup
   def prep(unix_user, public_key, nics, gua, ip4, local_ip4, boot_image, max_vcpus, cpu_topology, mem_gib, ndp_needed, storage_params, storage_secrets, swap_size_bytes, pci_devices)
     setup_networking(false, gua, ip4, local_ip4, nics, ndp_needed, multiqueue: max_vcpus > 1)
     cloudinit(unix_user, public_key, nics, swap_size_bytes)
-    download_boot_image(boot_image)
     storage(storage_params, storage_secrets, true)
     hugepages(mem_gib)
     prepare_pci_devices(pci_devices)
@@ -476,10 +475,6 @@ EOS
       storage_volume.prep(key_wrapping_secrets) if prep
       storage_volume.start(key_wrapping_secrets)
     }
-  end
-
-  def download_boot_image(boot_image)
-    BootImage.new(boot_image, nil).download
   end
 
   # Unnecessary if host has this set before creating the netns, but

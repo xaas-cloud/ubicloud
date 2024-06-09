@@ -136,7 +136,11 @@ class Prog::DownloadBootImage < Prog::Base
       }.to_json
       sshable.cmd("common/bin/daemonizer 'host/bin/download-boot-image' #{q_daemon_name}", stdin: params_json)
     when "Failed"
-      BootImage.where(vm_host_id: vm_host.id, name: image_name, version: version).destroy
+      if !Config.production?
+        sshable.cmd("common/bin/daemonizer --clean #{q_daemon_name}")
+      else
+        BootImage.where(vm_host_id: vm_host.id, name: image_name, version: version).destroy
+      end
       fail "Failed to download '#{image_name}' image on #{vm_host}"
     end
 

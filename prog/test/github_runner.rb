@@ -47,6 +47,8 @@ class Prog::Test::GithubRunner < Prog::Test::Base
 
   label def wait_download_boot_images
     reap
+    print "50505050505050"
+    vmh.sshable.cmd("ls -lah /var/storage/images")
     hop_trigger_test_runs if leaf?
     donate
   end

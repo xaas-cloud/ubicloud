@@ -13,7 +13,9 @@ def main(options)
   if options[:test_cases].include?("vm")
     encrypted_vms_st = Prog::Test::VmGroup.assemble(storage_encrypted: true, test_reboot: true)
     log(encrypted_vms_st, "storage_encrypted: true")
-    tests_to_wait << [encrypted_vms_st, nil]
+    # Running this test sequentially as it reboots the host. Depending on when the reboot happens
+    # the other tests might fail.
+    wait_until(encrypted_vms_st)
 
     unencrypted_vms_st = Prog::Test::VmGroup.assemble(storage_encrypted: false, test_reboot: false)
     log(unencrypted_vms_st, "storage_encrypted: false")

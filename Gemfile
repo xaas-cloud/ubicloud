@@ -58,3 +58,5 @@ group :test do
 end
 
 gem "webauthn", "~> 3.1"
+
+gem "acme-client", "~> 2.0"

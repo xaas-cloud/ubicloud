@@ -195,20 +195,13 @@ class Vm < Sequel::Model
     super + [:public_key]
   end
 
-  def attach_to_loadbalancer(loadbalancer)
-    add_load_balancer(loadbalancer)
-    incr_update_load_balancer
+  def attach_to_loadbalancer(load_balancer)
+    add_load_balancer(load_balancer)
+    load_balancer.incr_update_load_balancer
   end
 
-  def detach_from_loadbalancer
-    DB[:load_balancers_vms].where(vm_id: id).delete(force: true)
-    incr_update_load_balancer
-  end
-
-  def update_load_balancer_state(state)
-    DB.transaction do
-      DB[:load_balancers_vms].where(vm_id: id).update(state: state)
-      incr_update_load_balancer
-    end
+  def detach_from_loadbalancer(load_balancer)
+    DB[:load_balancers_vms].where(load_balancer_id: load_balancer.id).delete(force: true)
+    load_balancer.incr_update_load_balancer
   end
 end

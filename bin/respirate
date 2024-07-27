@@ -17,7 +17,7 @@ workers = [
 workers.compact!
 
 workers.each do |ubid, prog, label, stack|
-  Strand.dataset.insert_conflict.insert(id: UBID.parse(ubid).to_uuid, prog:, label:, stack: (stack || [{}]).to_json)
+  Strand.new(id: UBID.parse(ubid).to_uuid, prog:, label:, stack: stack || [{}]).insert_conflict(target: :id).save_changes
 end
 
 clover_freeze

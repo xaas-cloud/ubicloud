@@ -98,7 +98,11 @@ class Prog::Vnet::CertNexus < Prog::Base
 
   label def destroy
     # the reason is chosen as "cessationOfOperation"
-    acme_client.revoke(certificate: cert.cert, reason: REVOKE_REASON) if cert.cert
+    begin
+      acme_client.revoke(certificate: cert.cert, reason: REVOKE_REASON) if cert.cert
+    rescue Acme::Client::Error::AlreadyRevoked
+      Clog.emit("Certificate is already revoked")
+    end
 
     dns_zone.delete_record(record_name: dns_record_name) if dns_challenge
     cert.destroy

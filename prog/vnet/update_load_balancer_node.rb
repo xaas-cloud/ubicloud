@@ -11,6 +11,18 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
     load_balancer.load_balancers_vms_dataset[vm_id: vm.id].state
   end
 
+  def cert_folder
+    "/vm/#{vm.inhost_name}/cert"
+  end
+
+  def cert_path
+    "#{cert_folder}/cert.pem"
+  end
+
+  def key_path
+    "#{cert_folder}/key.pem"
+  end
+
   def before_run
     pop "VM is destroyed" unless vm
   end
@@ -18,7 +30,7 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
   label def update_load_balancer
     if vm_load_balancer_state == "detaching"
       load_balancer.remove_vm(vm)
-      hop_remove_load_balancer
+      hop_remove_cert_server
     end
 
     # if there is literally no up resources to balance for, we simply not do
@@ -27,6 +39,68 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
 
     vm.vm_host.sshable.cmd("sudo ip netns exec #{vm.inhost_name} nft --file -", stdin: generate_lb_based_nat_rules)
     pop "load balancer is updated"
+  end
+
+  label def put_certificate
+    cert = load_balancer.active_cert
+    cert_payload = cert.cert
+    cert_key_payload = OpenSSL::PKey::RSA.new(cert.csr_key).to_pem
+    vm.vm_host.sshable.cmd("sudo -u #{vm.inhost_name} mkdir -p #{cert_folder}")
+    vm.vm_host.sshable.cmd("sudo -u #{vm.inhost_name} tee #{cert_path}", stdin: cert_payload)
+    vm.vm_host.sshable.cmd("sudo -u #{vm.inhost_name} tee #{key_path}", stdin: cert_key_payload)
+    hop_start_certificate_server
+  end
+
+  label def start_certificate_server
+    service_name = "#{vm.inhost_name}_cert_server"
+    service_file_path = "/vm/#{vm.inhost_name}/#{service_name}.service"
+    systemd_service = <<SYSTEMD
+[Unit]
+Description=Certificate Server
+After=network.target
+
+[Service]
+NetworkNamespacePath=/var/run/netns/#{vm.inhost_name}
+ExecStart=busybox httpd -f -p [FD00:0B1C:100D:CE::]:8080 -h #{cert_folder}
+Restart=always
+Type=simple
+ProtectSystem=strict
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+NoNewPrivileges=yes
+ReadOnlyPaths=#{cert_path} #{key_path}
+User=#{vm.inhost_name}
+Group=#{vm.inhost_name}
+SYSTEMD
+
+    vm.vm_host.sshable.cmd("sudo -u #{vm.inhost_name} tee #{service_file_path}", stdin: systemd_service)
+
+    start_server_cmds = <<CMD
+systemctl enable #{service_file_path}
+systemctl daemon-reload
+systemctl start #{service_name}
+CMD
+
+    vm.vm_host.sshable.cmd(start_server_cmds)
+
+    pop "certificate server is started"
+  end
+
+  label def remove_cert_server
+    remove_cert_cmds = <<CMD
+systemctl stop #{vm.inhost_name}_cert_server
+systemctl disable #{vm.inhost_name}_cert_server
+rm -f /vm/#{vm.inhost_name}/#{vm.inhost_name}_cert_server.service
+rm -rf /vm/#{vm.inhost_name}/cert
+systemctl daemon-reload
+CMD
+    vm.vm_host.sshable.cmd("sudo ip netns exec #{vm.inhost_name} bash -c '#{remove_cert_cmds}'")
+
+    hop_remove_load_balancer
   end
 
   label def remove_load_balancer

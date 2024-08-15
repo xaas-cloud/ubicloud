@@ -24,6 +24,7 @@ RSpec.describe Prog::Vnet::UpdateLoadBalancerNode do
     lb.add_vm(vm)
     allow(nx).to receive_messages(vm: vm, load_balancer: lb)
     allow(vm).to receive_messages(ephemeral_net4: NetAddr::IPv4Net.parse("100.100.100.100/32"), ephemeral_net6: NetAddr::IPv6Net.parse("2a02:a464:deb2:a000::/64"))
+    allow(vm).to receive(:vm_host).and_return(instance_double(VmHost, sshable: instance_double(Sshable)))
   end
 
   describe ".before_run" do
@@ -40,6 +41,24 @@ RSpec.describe Prog::Vnet::UpdateLoadBalancerNode do
     end
   end
 
+  describe ".cert_folder" do
+    it "returns the certificate folder" do
+      expect(nx.cert_folder).to eq("/vm/#{vm.inhost_name}/cert")
+    end
+  end
+
+  describe ".cert_path" do
+    it "returns the certificate path" do
+      expect(nx.cert_path).to eq("/vm/#{vm.inhost_name}/cert/cert.pem")
+    end
+  end
+
+  describe ".key_path" do
+    it "returns the key path" do
+      expect(nx.key_path).to eq("/vm/#{vm.inhost_name}/cert/key.pem")
+    end
+  end
+
   describe "#update_load_balancer" do
     context "when no healthy vm exists" do
       it "hops to remove load balancer" do
@@ -47,10 +66,10 @@ RSpec.describe Prog::Vnet::UpdateLoadBalancerNode do
         expect { nx.update_load_balancer }.to hop("remove_load_balancer")
       end
 
-      it "removes the VM from load balancer and hops to remove_load_balancer if the VM is detaching" do
+      it "removes the VM from load balancer and hops to remove_cert_server if the VM is detaching" do
         lb.load_balancers_vms_dataset.update(state: "detaching")
         expect(lb).to receive(:remove_vm).with(vm)
-        expect { nx.update_load_balancer }.to hop("remove_load_balancer")
+        expect { nx.update_load_balancer }.to hop("remove_cert_server")
       end
     end
 
@@ -273,6 +292,76 @@ LOAD_BALANCER
         expect(lb).to receive(:algorithm).and_return("least_conn").at_least(:once)
         expect { nx.update_load_balancer }.to raise_error("Unsupported load balancer algorithm: least_conn")
       end
+    end
+  end
+
+  describe "#put_certificate" do
+    let(:cert) {
+      instance_double(Cert, cert: "cert", csr_key: OpenSSL::PKey::RSA.new(4096))
+    }
+
+    before do
+      allow(lb).to receive(:active_cert).and_return(cert)
+    end
+
+    it "creates a certificate folder, puts the certificate and hops to start_certificate_server" do
+      expect(vm.vm_host.sshable).to receive(:cmd).with("sudo -u #{vm.inhost_name} mkdir -p /vm/#{vm.inhost_name}/cert")
+      expect(vm.vm_host.sshable).to receive(:cmd).with("sudo -u #{vm.inhost_name} tee /vm/#{vm.inhost_name}/cert/cert.pem", stdin: "cert")
+      expect(vm.vm_host.sshable).to receive(:cmd).with("sudo -u #{vm.inhost_name} tee /vm/#{vm.inhost_name}/cert/key.pem", stdin: cert.csr_key.to_pem)
+      expect { nx.put_certificate }.to hop("start_certificate_server")
+    end
+  end
+
+  describe "#start_certificate_server" do
+    it "starts the certificate server and pops" do
+      service = <<SERVICE
+[Unit]
+Description=Certificate Server
+After=network.target
+
+[Service]
+NetworkNamespacePath=/var/run/netns/#{vm.inhost_name}
+ExecStart=busybox httpd -f -p [FD00:0B1C:100D:CE::]:8080 -h /vm/#{vm.inhost_name}/cert
+Restart=always
+Type=simple
+ProtectSystem=strict
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+NoNewPrivileges=yes
+ReadOnlyPaths=/vm/#{vm.inhost_name}/cert/cert.pem /vm/#{vm.inhost_name}/cert/key.pem
+User=#{vm.inhost_name}
+Group=#{vm.inhost_name}
+SERVICE
+
+      expect(vm.vm_host.sshable).to receive(:cmd).with("sudo -u #{vm.inhost_name} tee /vm/#{vm.inhost_name}/#{vm.inhost_name}_cert_server.service", stdin: service)
+
+      expect(vm.vm_host.sshable).to receive(:cmd).with(<<CMD)
+systemctl enable /vm/#{vm.inhost_name}/#{vm.inhost_name}_cert_server.service
+systemctl daemon-reload
+systemctl start #{vm.inhost_name}_cert_server
+CMD
+
+      expect { nx.start_certificate_server }.to exit({"msg" => "certificate server is started"})
+    end
+  end
+
+  describe "#remove_cert_server" do
+    it "removes the certificate files, server and hops to remove_load_balancer" do
+      cmd = <<CMD
+systemctl stop #{vm.inhost_name}_cert_server
+systemctl disable #{vm.inhost_name}_cert_server
+rm -f /vm/#{vm.inhost_name}/#{vm.inhost_name}_cert_server.service
+rm -rf /vm/#{vm.inhost_name}/cert
+systemctl daemon-reload
+CMD
+
+      expect(vm.vm_host.sshable).to receive(:cmd).with("sudo ip netns exec #{vm.inhost_name} bash -c '#{cmd}'")
+
+      expect { nx.remove_cert_server }.to hop("remove_load_balancer")
     end
   end
 

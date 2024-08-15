@@ -95,9 +95,27 @@ RSpec.describe Prog::Vnet::LoadBalancerNexus do
       expect { nx.wait_cert_provisioning }.to nap(60)
     end
 
-    it "hops to wait if need_certificates? is false" do
+    it "hops to wait_cert_broadcast if need_certificates? is false" do
+      vm = Prog::Vm::Nexus.assemble("pub-key", ps.projects.first.id, name: "testvm", private_subnet_id: ps.id).subject
+      nx.load_balancer.add_vm(vm)
+      expect(Strand.where(prog: "Vnet::UpdateLoadBalancerNode", label: "put_certificate").count).to eq 1
       expect(nx.load_balancer).to receive(:need_certificates?).and_return(false)
-      expect { nx.wait_cert_provisioning }.to hop("wait")
+      expect { nx.wait_cert_provisioning }.to hop("wait_cert_broadcast")
+      expect(Strand.where(prog: "Vnet::UpdateLoadBalancerNode", label: "put_certificate").count).to eq 2
+    end
+  end
+
+  describe "#wait_cert_broadcast" do
+    it "naps for 1 second if not all children are done" do
+      vm = Prog::Vm::Nexus.assemble("pub-key", ps.projects.first.id, name: "testvm", private_subnet_id: ps.id).subject
+      nx.load_balancer.add_vm(vm)
+      expect(nx).to receive(:reap)
+      expect { nx.wait_cert_broadcast }.to nap(1)
+    end
+
+    it "hops to wait if all children are done" do
+      expect(nx).to receive(:reap)
+      expect { nx.wait_cert_broadcast }.to hop("wait")
     end
   end
 

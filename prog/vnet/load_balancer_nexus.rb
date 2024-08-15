@@ -60,8 +60,20 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
     if load_balancer.need_certificates?
       nap 60
     else
+      load_balancer.vms.each do |vm|
+        bud Prog::Vnet::UpdateLoadBalancerNode, {"subject_id" => vm.id, "load_balancer_id" => load_balancer.id}, :put_certificate
+      end
+      hop_wait_cert_broadcast
+    end
+  end
+
+  label def wait_cert_broadcast
+    reap
+    if strand.children_dataset.where(prog: "Vnet::UpdateLoadBalancerNode").all? { _1.exitval == "certificate server is started" } || strand.children.empty?
       hop_wait
     end
+
+    nap 1
   end
 
   label def update_vm_load_balancers

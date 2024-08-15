@@ -35,6 +35,7 @@ class LoadBalancer < Sequel::Model
     DB.transaction do
       super
       Strand.create_with_id(prog: "Vnet::LoadBalancerHealthProbes", label: "health_probe", stack: [{subject_id: id, vm_id: vm.id}], parent_id: strand.id)
+      Strand.create_with_id(prog: "Vnet::UpdateLoadBalancerNode", label: "put_certificate", stack: [{subject_id: vm.id, load_balancer_id: id}], parent_id: id)
       incr_rewrite_dns_records
     end
   end

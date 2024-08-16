@@ -52,6 +52,42 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
   end
 
   label def start_certificate_server
+    certificate_server_config = <<CONFIG
+{
+  admin off
+}
+
+http://[FD00:0B1C:100D:CE::]:8080 {
+  bind [FD00:0B1C:100D:CE::]
+
+  # Reject any requests with a body
+  @hasBody {
+      expression `{http.request.body} != ""`
+  }
+
+  handle @hasBody {
+      respond "Request Body Not Allowed" 413
+  }
+
+  # Define a matcher for GET requests
+	@get_requests {
+		method GET
+	}
+
+	# Handle GET requests and serve files
+	handle @get_requests {
+		file_server {
+			root #{cert_folder}
+		}
+	}
+
+	# Respond with 403 for any other requests
+	respond "Access Denied" 403
+}
+CONFIG
+
+    vm.vm_host.sshable.cmd("sudo -u #{vm.inhost_name} tee /vm/#{vm.inhost_name}/caddy_config", stdin: certificate_server_config)
+
     service_name = "#{vm.inhost_name}_cert_server"
     service_file_path = "/vm/#{vm.inhost_name}/#{service_name}.service"
     systemd_service = <<SYSTEMD
@@ -61,10 +97,14 @@ After=network.target
 
 [Service]
 NetworkNamespacePath=/var/run/netns/#{vm.inhost_name}
-ExecStart=busybox httpd -f -p [FD00:0B1C:100D:CE::]:8080 -h #{cert_folder}
+ExecStart=/usr/bin/caddy run --config /vm/#{vm.inhost_name}/caddy_config --adapter caddyfile
+ExecReload=/usr/bin/caddy reload --config /vm/#{vm.inhost_name}/caddy_config --force
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+PrivateTmp=true
 Restart=always
 Type=simple
-ProtectSystem=strict
+ProtectSystem=full
 PrivateDevices=yes
 PrivateTmp=yes
 ProtectHome=yes
@@ -76,7 +116,6 @@ ReadOnlyPaths=#{cert_path} #{key_path}
 User=#{vm.inhost_name}
 Group=#{vm.inhost_name}
 SYSTEMD
-
     vm.vm_host.sshable.cmd("sudo -u #{vm.inhost_name} tee #{service_file_path}", stdin: systemd_service)
 
     start_server_cmds = <<CMD
@@ -85,7 +124,7 @@ systemctl daemon-reload
 systemctl start #{service_name}
 CMD
 
-    vm.vm_host.sshable.cmd(start_server_cmds)
+    vm.vm_host.sshable.cmd("sudo ip netns exec #{vm.inhost_name} bash -c '#{start_server_cmds}'")
 
     pop "certificate server is started"
   end
@@ -96,6 +135,7 @@ systemctl stop #{vm.inhost_name}_cert_server
 systemctl disable #{vm.inhost_name}_cert_server
 rm -f /vm/#{vm.inhost_name}/#{vm.inhost_name}_cert_server.service
 rm -rf /vm/#{vm.inhost_name}/cert
+rm -f /vm/#{vm.inhost_name}/caddy_config
 systemctl daemon-reload
 CMD
     vm.vm_host.sshable.cmd("sudo ip netns exec #{vm.inhost_name} bash -c '#{remove_cert_cmds}'")

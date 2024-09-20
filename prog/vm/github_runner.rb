@@ -260,7 +260,8 @@ class Prog::Vm::GithubRunner < Prog::Base
       sudo mv ./actions-runner /home/runner/
       sudo chown -R runner:runner /home/runner/actions-runner
 
-      echo "CUSTOM_ACTIONS_CACHE_URL=http://localhost:51123/random_token/" | sudo tee -a /etc/environment
+      echo "CUSTOM_ACTIONS_CACHE_URL=http://host.docker.internal:51123/random_token/" | sudo tee -a /etc/environment
+      echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
       echo "127.0.0.1 localhost.blob.core.windows.net" | sudo tee -a /etc/hosts
     COMMAND
 

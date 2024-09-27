@@ -453,6 +453,7 @@ dhcp-option=option6:dns-server,#{dnsmasq_address_ip6}
 listen-address=#{dnsmasq_address_ip6}
 dhcp-option=26,1400
 bind-interfaces
+address=/localhost.blob.core.windows.net/#{nics.first.net4.split("/").first}
 DNSMASQ_CONF
 
     ethernets = nics.map do |nic|

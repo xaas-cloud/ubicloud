@@ -53,8 +53,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: sleep
+        run: sleep 10
       - name: Build and push by digest
         id: build
+        continue-on-error: true
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -63,6 +66,9 @@ jobs:
           cache-from: type=gha,scope=ubicloud-${{ matrix.runner }}
           cache-to: type=gha,mode=max,scope=ubicloud-${{ matrix.runner }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: cat cacheproxy log
+        run: sudo cat /home/runneradmin/cacheproxy.log
 
       - name: Export digest
         run: |

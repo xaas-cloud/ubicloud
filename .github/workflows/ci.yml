@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - velioglu/test-cache
   pull_request:
 
 jobs:
@@ -53,14 +53,14 @@ jobs:
           rm -rf ruby-build
         fi
 
-    - name: Set up Ruby
-      uses: ubicloud/setup-ruby@v1
+    - name: Set up Rubys2
+      uses: ruby/setup-ruby@v1
       with:
         ruby-version: .tool-versions
         bundler-cache: true
 
     - name: Set up Node.js
-      uses: ubicloud/setup-node@v4
+      uses: actions/setup-node@v4
       with:
          node-version: "22"
 

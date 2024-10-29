@@ -64,6 +64,9 @@ jobs:
       with:
          node-version: "22"
 
+    - name: cat cacheproxy log
+      run: sudo cat /home/runneradmin/cacheproxy.log
+
     - name: Install node packages
       run: npm ci
 

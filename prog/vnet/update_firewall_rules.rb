@@ -92,6 +92,21 @@ table inet fw_table {
     # next section of rules.
     ip6 daddr #{clover_ephemeral} counter accept
     ip6 saddr #{clover_ephemeral} counter accept
+
+    # Allow TCP and UDP traffic for allowed_ipv4_port_tuple and
+    # allowed_ipv6_port_tuple into the VM using any address, such as;
+    #  - public ipv4
+    #  - private ipv4
+    #  - public ipv6 (guest_ephemeral)
+    #  - private ipv6
+    #  - private clover ephemeral ipv6
+    ip saddr . tcp dport @allowed_ipv4_port_tuple ct state established,related,new counter accept
+    ip saddr . udp dport @allowed_ipv4_port_tuple ct state established,related,new counter accept
+    ip6 saddr . tcp dport @allowed_ipv6_port_tuple ct state established,related,new counter accept
+    ip6 saddr . udp dport @allowed_ipv6_port_tuple ct state established,related,new counter accept
+
+    # Allow outgoing traffic from the VM using the following addresses as
+    # source address.
     ip6 saddr @private_ipv6_cidrs ct state established,related,new counter accept
     ip6 saddr #{guest_ephemeral} ct state established,related,new counter accept
 

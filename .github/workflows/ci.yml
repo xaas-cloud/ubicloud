@@ -53,7 +53,7 @@ jobs:
           rm -rf ruby-build
         fi
 
-    - name: Restore cached Primes
+    - name: Restore cached Primes-1
       id: cache-config
       uses: actions/cache/restore@v4
       with:

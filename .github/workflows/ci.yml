@@ -53,6 +53,36 @@ jobs:
           rm -rf ruby-build
         fi
 
+    - name: Restore cached Primes
+      id: cache-config
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          myfolder
+          myfolder2
+        key: ${{ runner.os }}-myfolder-configas15.json
+
+    - name: Generate configas7.json if not cached
+      if: steps.cache-config.outputs.cache-hit != 'true'
+      run: |
+        mkdir myfolder
+        dd if=/dev/urandom of=myfolder/file1.txt bs=1M count=30
+        dd if=/dev/urandom of=myfolder/file2.txt bs=1M count=35
+        dd if=/dev/urandom of=myfolder/file3.txt bs=1M count=55
+        mkdir myfolder2
+        dd if=/dev/urandom of=myfolder2/file1.txt bs=1M count=30
+        dd if=/dev/urandom of=myfolder2/file2.txt bs=1M count=35
+        dd if=/dev/urandom of=myfolder2/file3.txt bs=1M count=55
+
+    - name: Save Primes
+      id: cache-primes-save
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          myfolder
+          myfolder2
+        key: ${{ runner.os }}-myfolder-configas15.json
+
     - name: Set up Rubys3
       uses: ruby/setup-ruby@v1
       with:

@@ -63,6 +63,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
          node-version: "22"
+         cache: 'npm'
 
     - name: cat cacheproxy log
       run: sudo cat /home/runneradmin/cacheproxy.log

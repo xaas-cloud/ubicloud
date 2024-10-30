@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubicloud, ubicloud-arm]
+        runs-on: [ubicloud]
     name: Ruby CI - ${{matrix.runs-on}}
     runs-on: ${{matrix.runs-on}}
 
@@ -60,7 +60,7 @@ jobs:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas16.json
+        key: ${{ runner.os }}-myfolder-configas17.json
 
     - name: Generate configas7.json if not cached
       if: steps.cache-config.outputs.cache-hit != 'true'
@@ -81,7 +81,7 @@ jobs:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas16.json
+        key: ${{ runner.os }}-myfolder-configas17.json
 
     - name: Set up Rubys3
       uses: ruby/setup-ruby@v1

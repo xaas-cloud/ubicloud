@@ -53,7 +53,7 @@ jobs:
           rm -rf ruby-build
         fi
 
-    - name: Set up Rubys2
+    - name: Set up Rubys3
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: .tool-versions

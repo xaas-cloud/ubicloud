@@ -60,7 +60,7 @@ jobs:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas17.json
+        key: ${{ runner.os }}-myfolder-configas18.json
 
     - name: Generate configas7.json if not cached
       if: steps.cache-config.outputs.cache-hit != 'true'
@@ -81,7 +81,16 @@ jobs:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas17.json
+        key: ${{ runner.os }}-myfolder-configas18.json
+
+    - name: Restore cached Primes-2
+      id: cache-config2
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          myfolder
+          myfolder2
+        key: ${{ runner.os }}-myfolder-configas18.json
 
     - name: Set up Rubys3
       uses: ruby/setup-ruby@v1

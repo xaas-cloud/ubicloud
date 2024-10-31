@@ -60,19 +60,19 @@ jobs:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas18.json
+        key: ${{ runner.os }}-myfolder-configas19.json
 
     - name: Generate configas7.json if not cached
       if: steps.cache-config.outputs.cache-hit != 'true'
       run: |
         mkdir myfolder
-        dd if=/dev/urandom of=myfolder/file1.txt bs=1M count=1000
-        dd if=/dev/urandom of=myfolder/file2.txt bs=1M count=1200
-        dd if=/dev/urandom of=myfolder/file3.txt bs=1M count=1300
+        dd if=/dev/urandom of=myfolder/file1.txt bs=1M count=100
+        dd if=/dev/urandom of=myfolder/file2.txt bs=1M count=120
+        dd if=/dev/urandom of=myfolder/file3.txt bs=1M count=130
         mkdir myfolder2
-        dd if=/dev/urandom of=myfolder2/file1.txt bs=1M count=1200
-        dd if=/dev/urandom of=myfolder2/file2.txt bs=1M count=1500
-        dd if=/dev/urandom of=myfolder2/file3.txt bs=1M count=1800
+        dd if=/dev/urandom of=myfolder2/file1.txt bs=1M count=120
+        dd if=/dev/urandom of=myfolder2/file2.txt bs=1M count=150
+        dd if=/dev/urandom of=myfolder2/file3.txt bs=1M count=180
 
     - name: Save Primes
       id: cache-primes-save
@@ -81,16 +81,16 @@ jobs:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas18.json
+        key: ${{ runner.os }}-myfolder-configas19.json
 
-    - name: Restore cached Primes-2
+    - name: Restore cached Primes-4
       id: cache-config2
       uses: actions/cache/restore@v4
       with:
         path: |
           myfolder
           myfolder2
-        key: ${{ runner.os }}-myfolder-configas18.json
+        key: ${{ runner.os }}-myfolder-configas19.json
 
     - name: Set up Rubys3
       uses: ruby/setup-ruby@v1

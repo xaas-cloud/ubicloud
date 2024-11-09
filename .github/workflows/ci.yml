@@ -83,7 +83,7 @@ jobs:
           myfolder2
         key: ${{ runner.os }}-myfolder-configas19.json
 
-    - name: Restore cached Primes-4
+    - name: Restore cached Primes-5
       id: cache-config2
       uses: actions/cache/restore@v4
       with:

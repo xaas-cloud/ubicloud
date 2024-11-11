@@ -119,4 +119,10 @@ module ContentGenerator
       end
     end
   end
+
+  module LoadBalancer
+    def self.select_option(select_option)
+      select_option[:display_name]
+    end
+  end
 end

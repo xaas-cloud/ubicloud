@@ -162,6 +162,19 @@ class Project < Sequel::Model
     options.serialize
   end
 
+  def generate_load_balancer_options(account:)
+    options = OptionTreeGenerator.new
+    options.add_option(name: "name")
+    options.add_option(name: "description")
+    options.add_option(name: "private_subnet_id", values: private_subnets_dataset.authorized(account.id, "PrivateSubnet:view").map { {value: _1.ubid, display_name: _1.name} })
+    options.add_option(name: "algorithm", values: ["Round Robin", "Hash Based"].map { {value: _1.downcase.tr(" ", "_"), display_name: _1} })
+    options.add_option(name: "src_port")
+    options.add_option(name: "dst_port")
+    options.add_option(name: "health_check_endpoint")
+    options.add_option(name: "health_check_protocol", values: ["http", "https", "tcp"].map { {value: _1, display_name: _1.upcase} })
+    options.serialize
+  end
+
   def self.feature_flag(*flags, into: self)
     flags.map(&:to_s).each do |flag|
       into.module_eval do

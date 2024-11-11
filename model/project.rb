@@ -121,6 +121,29 @@ class Project < Sequel::Model
     ApiKey.create_with_id(owner_table: Project.table_name, owner_id: id, used_for: used_for)
   end
 
+  def generate_postgres_options(flavor: "standard")
+    options = OptionTreeGenerator.new
+
+    options.add_option(name: "name")
+    options.add_option(name: "flavor", values: flavor)
+    options.add_option(name: "location", values: Option.postgres_locations.map(&:display_name), parent: "flavor")
+    options.add_option(name: "size", values: [2, 4, 8, 16, 30, 60].map { "standard-#{_1}" }, parent: "location")
+
+    options.add_option(name: "storage_size", values: ["128", "256", "512", "1024", "2048", "4096"], parent: "size") do |flavor, location, size, storage_size|
+      size = size.split("-").last.to_i
+      lower_limit = [size * 64, 1024].min
+      upper_coefficient = (location == "hetzner-fsn1") ? 256 : 128
+      storage_size.to_i >= lower_limit && storage_size.to_i <= size * upper_coefficient
+    end
+
+    options.add_option(name: "version", values: ["16", "17"], parent: "flavor") do |flavor, version|
+      flavor != PostgresResource::Flavor::LANTERN || version == "16"
+    end
+
+    options.add_option(name: "ha_type", values: ["none", "async", "sync"], parent: "storage_size")
+    options.serialize
+  end
+
   def self.feature_flag(*flags, into: self)
     flags.map(&:to_s).each do |flag|
       into.module_eval do

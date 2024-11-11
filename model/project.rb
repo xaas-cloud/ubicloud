@@ -144,6 +144,24 @@ class Project < Sequel::Model
     options.serialize
   end
 
+  def generate_firewall_options(account:)
+    options = OptionTreeGenerator.new
+    options.add_option(name: "name")
+    options.add_option(name: "description")
+    options.add_option(name: "location", values: Option.locations.map(&:display_name))
+    subnets = private_subnets_dataset.authorized(account.id, "PrivateSubnet:view").map {
+      {
+        location: LocationNameConverter.to_display_name(_1.location),
+        value: _1.ubid,
+        display_name: _1.name
+      }
+    }
+    options.add_option(name: "private_subnet_id", values: subnets, parent: "location") do |location, private_subnet|
+      private_subnet[:location] == location
+    end
+    options.serialize
+  end
+
   def self.feature_flag(*flags, into: self)
     flags.map(&:to_s).each do |flag|
       into.module_eval do

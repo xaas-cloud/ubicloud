@@ -14,6 +14,7 @@ class Clover
 
       r.get "create" do
         Authorization.authorize(current_account.id, "PrivateSubnet:create", @project.id)
+        @option_tree, @option_parents = generate_private_subnet_options
         view "networking/private_subnet/create"
       end
     end

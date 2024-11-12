@@ -23,6 +23,9 @@ jobs:
     services:
       postgres:
         image: postgres:15.4
+        credentials:
+          username: "velioglub@gmail.com"
+          password: "testDocker123"
         env:
           POSTGRES_USER: ${{ env.DB_USER }}
           POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}

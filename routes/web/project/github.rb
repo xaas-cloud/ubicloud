@@ -28,6 +28,12 @@ class Clover
       view "github/setting"
     end
 
+    r.post "transparent_cache" do
+      @project.update(feature_flags: @project.feature_flags.merge("transparent_cache" => !@project.feature_flags["transparent_cache"]))
+      flash["notice"] = "Transparent cache #{@project.feature_flags["transparent_cache"] ? "enabled" : "disabled"}"
+      r.redirect "#{@project.path}/github/setting"
+    end
+
     r.on "installation" do
       r.get "create" do
         unless @project.has_valid_payment_method?

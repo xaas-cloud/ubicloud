@@ -56,6 +56,31 @@
         </table>
       </div>
     </div>
+    <div class="md:flex md:items-center md:justify-between pb-1 lg:pb-2">
+      <div class="min-w-0 flex-1">
+        <h3 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-2xl sm:tracking-tight">
+          Transparent Cache
+        </h3>
+      </div>
+      <div class="col-span-6 sm:col-span-2 text-right space-y-1">
+        <% if @project_data[:feature_flags]["transparent_cache"]%>
+          <form action="<%= "#{@project_data[:path]}/github/transparent_cache" %>" method="POST">
+            <%== csrf_tag("#{@project_data[:path]}/github/transparent_cache") %>
+            <%== render(
+              "components/button",
+              locals: {
+                text: "Disable"
+              }
+            ) %>
+          </form>
+        <% else %>
+          <form action="<%= "#{@project_data[:path]}/github/transparent_cache" %>" method="POST">
+            <%== csrf_tag("#{@project_data[:path]}/github/transparent_cache") %>
+            <%== render("components/button", locals: { text: "Enable" }) %>
+          </form>
+        <% end %>
+      </div>
+    </div>
   </div>
 <% elsif !@project.has_valid_payment_method? %>
   <form action="<%= "#{@project_data[:path]}/billing" %>" method="POST">

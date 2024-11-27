@@ -27,7 +27,8 @@ class Clover
 
     required_parameters = []
     required_parameters << "name" << "location" if web?
-    request_body_params = validate_request_params(required_parameters, ["firewall_id"])
+    optional_parameters = %w[firewall_id]
+    request_body_params = validate_request_params(required_parameters, optional_parameters)
     firewall_id = if request_body_params["firewall_id"]
       fw = Firewall.from_ubid(request_body_params["firewall_id"])
       unless fw && fw.location == @location

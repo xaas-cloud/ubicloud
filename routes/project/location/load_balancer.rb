@@ -77,7 +77,8 @@ class Clover
 
       r.patch api? do
         authorize("LoadBalancer:edit", lb.id)
-        request_body_params = validate_request_params(%w[algorithm src_port dst_port health_check_endpoint vms])
+        required_parameters = %w[algorithm src_port dst_port health_check_endpoint vms]
+        request_body_params = validate_request_params(required_parameters)
         lb.update(
           algorithm: request_body_params["algorithm"],
           src_port: Validation.validate_port(:src_port, request_body_params["src_port"]),

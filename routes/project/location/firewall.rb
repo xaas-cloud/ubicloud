@@ -56,7 +56,8 @@ class Clover
       r.post %w[attach-subnet detach-subnet] do |action|
         authorize("Firewall:view", firewall.id)
 
-        private_subnet_id = validate_request_params(["private_subnet_id"])["private_subnet_id"]
+        required_parameters = %w[private_subnet_id]
+        private_subnet_id = validate_request_params(required_parameters)["private_subnet_id"]
         private_subnet = PrivateSubnet.from_ubid(private_subnet_id)
 
         unless private_subnet && private_subnet.location == @location

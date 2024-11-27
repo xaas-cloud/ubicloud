@@ -23,7 +23,7 @@ class Clover
     end
 
     r.post true do
-      required_parameters = ["name"]
+      required_parameters = %w[name]
       request_body_params = validate_request_params(required_parameters)
       project = current_account.create_project_with_default_policy(request_body_params["name"])
 

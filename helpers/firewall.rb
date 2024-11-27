@@ -24,7 +24,7 @@ class Clover
     Validation.validate_name(firewall_name)
 
     optional_parameters = %w[description]
-    optional_parameters.concat(%w[name location private_subnet_id]) if web?
+    optional_parameters << "name" << "location" << "private_subnet_id" if web?
     description = validate_request_params([], optional_parameters)["description"] || ""
 
     firewall = Firewall.create_with_id(

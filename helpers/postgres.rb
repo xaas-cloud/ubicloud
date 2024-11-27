@@ -7,9 +7,9 @@ class Clover
 
     Validation.validate_postgres_location(@location)
 
-    required_parameters = ["size"]
+    required_parameters = %w[size]
     required_parameters << "name" << "location" if web?
-    allowed_optional_parameters = ["storage_size", "ha_type", "version", "flavor"]
+    allowed_optional_parameters = %w[storage_size ha_type version flavor]
     request_body_params = validate_request_params(required_parameters, allowed_optional_parameters)
     parsed_size = Validation.validate_postgres_size(@location, request_body_params["size"])
 

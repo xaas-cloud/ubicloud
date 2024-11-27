@@ -80,7 +80,7 @@ class Clover
         r.post true do
           authorize("Postgres:Firewall:edit", pg.id)
 
-          required_parameters = ["cidr"]
+          required_parameters = %w[cidr]
           request_body_params = validate_request_params(required_parameters)
           parsed_cidr = Validation.validate_cidr(request_body_params["cidr"])
 
@@ -118,7 +118,7 @@ class Clover
         r.post true do
           authorize("Postgres:edit", pg.id)
 
-          required_parameters = ["url", "username", "password"]
+          required_parameters = %w[url username password]
           request_body_params = validate_request_params(required_parameters)
 
           Validation.validate_url(request_body_params["url"])
@@ -160,7 +160,7 @@ class Clover
         authorize("Postgres:create", @project.id)
         authorize("Postgres:view", pg.id)
 
-        required_parameters = ["name", "restore_target"]
+        required_parameters = %w[name restore_target]
         request_body_params = validate_request_params(required_parameters)
 
         st = Prog::Postgres::PostgresResourceNexus.assemble(
@@ -196,7 +196,8 @@ class Clover
           end
         end
 
-        required_parameters = api? ? ["password"] : ["password", "repeat_password"]
+        required_parameters = %w[password]
+        required_parameters << "repeat_password" if web?
         request_body_params = validate_request_params(required_parameters)
         Validation.validate_postgres_superuser_password(request_body_params["password"], request_body_params["repeat_password"])
 

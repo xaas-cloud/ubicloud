@@ -27,10 +27,10 @@ class Clover
 
       r.post %w[attach-vm detach-vm] do |action|
         authorize("LoadBalancer:edit", lb.id)
-        required_parameters = %w[vm_id]
-        request_body_params = validate_request_params(required_parameters)
+        required_params = %w[vm_id]
+        validated_params = validate_request_params(required_params)
 
-        unless (vm = Vm.from_ubid(request_body_params["vm_id"]))
+        unless (vm = Vm.from_ubid(validated_params["vm_id"]))
           fail Validation::ValidationFailed.new("vm_id" => "VM not found")
         end
 
@@ -77,16 +77,16 @@ class Clover
 
       r.patch api? do
         authorize("LoadBalancer:edit", lb.id)
-        required_parameters = %w[algorithm src_port dst_port health_check_endpoint vms]
-        request_body_params = validate_request_params(required_parameters)
+        required_params = %w[algorithm src_port dst_port health_check_endpoint vms]
+        validated_params = validate_request_params(required_params)
         lb.update(
-          algorithm: request_body_params["algorithm"],
-          src_port: Validation.validate_port(:src_port, request_body_params["src_port"]),
-          dst_port: Validation.validate_port(:dst_port, request_body_params["dst_port"]),
-          health_check_endpoint: request_body_params["health_check_endpoint"]
+          algorithm: validated_params["algorithm"],
+          src_port: Validation.validate_port(:src_port, validated_params["src_port"]),
+          dst_port: Validation.validate_port(:dst_port, validated_params["dst_port"]),
+          health_check_endpoint: validated_params["health_check_endpoint"]
         )
 
-        new_vms = request_body_params["vms"].map { Vm.from_ubid(_1.delete("\"")) }
+        new_vms = validated_params["vms"].map { Vm.from_ubid(_1.delete("\"")) }
         new_vms.each do |vm|
           unless vm
             fail Validation::ValidationFailed.new("vms" => "VM not found")

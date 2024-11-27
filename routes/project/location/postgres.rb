@@ -80,9 +80,9 @@ class Clover
         r.post true do
           authorize("Postgres:Firewall:edit", pg.id)
 
-          required_parameters = %w[cidr]
-          request_body_params = validate_request_params(required_parameters)
-          parsed_cidr = Validation.validate_cidr(request_body_params["cidr"])
+          required_params = %w[cidr]
+          validated_params = validate_request_params(required_params)
+          parsed_cidr = Validation.validate_cidr(validated_params["cidr"])
 
           DB.transaction do
             PostgresFirewallRule.create_with_id(
@@ -118,17 +118,17 @@ class Clover
         r.post true do
           authorize("Postgres:edit", pg.id)
 
-          required_parameters = %w[url username password]
-          request_body_params = validate_request_params(required_parameters)
+          required_params = %w[url username password]
+          validated_params = validate_request_params(required_params)
 
-          Validation.validate_url(request_body_params["url"])
+          Validation.validate_url(validated_params["url"])
 
           DB.transaction do
             PostgresMetricDestination.create_with_id(
               postgres_resource_id: pg.id,
-              url: request_body_params["url"],
-              username: request_body_params["username"],
-              password: request_body_params["password"]
+              url: validated_params["url"],
+              username: validated_params["username"],
+              password: validated_params["password"]
             )
             pg.servers.each(&:incr_configure_prometheus)
           end
@@ -160,26 +160,26 @@ class Clover
         authorize("Postgres:create", @project.id)
         authorize("Postgres:view", pg.id)
 
-        required_parameters = %w[name restore_target]
-        request_body_params = validate_request_params(required_parameters)
+        required_params = %w[name restore_target]
+        validated_params = validate_request_params(required_params)
 
         st = Prog::Postgres::PostgresResourceNexus.assemble(
           project_id: @project.id,
           location: pg.location,
-          name: request_body_params["name"],
+          name: validated_params["name"],
           target_vm_size: pg.target_vm_size,
           target_storage_size_gib: pg.target_storage_size_gib,
           version: pg.version,
           flavor: pg.flavor,
           parent_id: pg.id,
-          restore_target: request_body_params["restore_target"]
+          restore_target: validated_params["restore_target"]
         )
         send_notification_mail_to_partners(st.subject, current_account.email)
 
         if api?
           Serializers::Postgres.serialize(st.subject, {detailed: true})
         else
-          flash["notice"] = "'#{request_body_params["name"]}' will be ready in a few minutes"
+          flash["notice"] = "'#{validated_params["name"]}' will be ready in a few minutes"
           r.redirect "#{@project.path}#{st.subject.path}"
         end
       end
@@ -196,13 +196,13 @@ class Clover
           end
         end
 
-        required_parameters = %w[password]
-        required_parameters << "repeat_password" if web?
-        request_body_params = validate_request_params(required_parameters)
-        Validation.validate_postgres_superuser_password(request_body_params["password"], request_body_params["repeat_password"])
+        required_params = %w[password]
+        required_params << "repeat_password" if web?
+        validated_params = validate_request_params(required_params)
+        Validation.validate_postgres_superuser_password(validated_params["password"], validated_params["repeat_password"])
 
         DB.transaction do
-          pg.update(superuser_password: request_body_params["password"])
+          pg.update(superuser_password: validated_params["password"])
           pg.representative_server.incr_update_superuser_password
         end
 

@@ -23,9 +23,9 @@ class Clover
     end
 
     r.post true do
-      required_parameters = %w[name]
-      request_body_params = validate_request_params(required_parameters)
-      project = current_account.create_project_with_default_policy(request_body_params["name"])
+      required_params = %w[name]
+      validated_params = validate_request_params(required_params)
+      project = current_account.create_project_with_default_policy(validated_params["name"])
 
       if api?
         Serializers::Project.serialize(project)

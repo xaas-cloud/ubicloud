@@ -7,13 +7,13 @@ class Clover
 
     Validation.validate_postgres_location(@location)
 
-    required_parameters = %w[size]
-    required_parameters << "name" << "location" if web?
-    allowed_optional_parameters = %w[storage_size ha_type version flavor]
-    request_body_params = validate_request_params(required_parameters, allowed_optional_parameters)
-    parsed_size = Validation.validate_postgres_size(@location, request_body_params["size"])
+    required_params = %w[size]
+    required_params << "name" << "location" if web?
+    optional_params = %w[storage_size ha_type version flavor]
+    validated_params = validate_request_params(required_params, optional_params)
+    parsed_size = Validation.validate_postgres_size(@location, validated_params["size"])
 
-    ha_type = request_body_params["ha_type"] || PostgresResource::HaType::NONE
+    ha_type = validated_params["ha_type"] || PostgresResource::HaType::NONE
     requested_standby_count = case ha_type
     when PostgresResource::HaType::ASYNC then 1
     when PostgresResource::HaType::SYNC then 2
@@ -28,10 +28,10 @@ class Clover
       location: @location,
       name:,
       target_vm_size: parsed_size.vm_size,
-      target_storage_size_gib: request_body_params["storage_size"] || parsed_size.storage_size_options.first,
-      ha_type: request_body_params["ha_type"] || PostgresResource::HaType::NONE,
-      version: request_body_params["version"] || PostgresResource::DEFAULT_VERSION,
-      flavor: request_body_params["flavor"] || PostgresResource::Flavor::STANDARD
+      target_storage_size_gib: validated_params["storage_size"] || parsed_size.storage_size_options.first,
+      ha_type: validated_params["ha_type"] || PostgresResource::HaType::NONE,
+      version: validated_params["version"] || PostgresResource::DEFAULT_VERSION,
+      flavor: validated_params["flavor"] || PostgresResource::Flavor::STANDARD
     )
     send_notification_mail_to_partners(st.subject, current_account.email)
 

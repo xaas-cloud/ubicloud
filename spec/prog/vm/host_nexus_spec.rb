@@ -231,6 +231,11 @@ RSpec.describe Prog::Vm::HostNexus do
       expect { nx.wait }.to hop("prep_reboot")
     end
 
+    it "hops to prep_reset when needed" do
+      expect(nx).to receive(:when_reset_set?).and_yield
+      expect { nx.wait }.to hop("prep_reset")
+    end
+
     it "hops to unavailable based on the host's available status" do
       expect(nx).to receive(:when_checkup_set?).and_yield
       expect(nx).to receive(:available?).and_return(false)
@@ -355,6 +360,36 @@ RSpec.describe Prog::Vm::HostNexus do
       expect(sshable).to receive(:cmd).with("cat /proc/sys/kernel/random/boot_id").and_return("xyz\n")
       expect(nx.get_boot_id).to eq("xyz")
     end
+  end
+
+  describe "host reset" do
+    it "prep_reset transitions to reset" do
+      expect(nx).to receive(:get_boot_id).and_return("xyz")
+      expect(vm_host).to receive(:update).with(last_boot_id: "xyz")
+      expect(vms).to all receive(:update).with(display_state: "resetting")
+      expect(nx).to receive(:decr_reset)
+      expect { nx.prep_reset }.to hop("reset")
+    end
+
+    it "reset naps if reset-host returns empty string" do
+      expect(nx).to receive(:get_boot_id).and_return("")
+      expect { nx.reset }.to nap(30)
+    end
+
+    it "reset naps if boot_id is unchanged" do
+      expect(nx).to receive(:get_boot_id).and_return("xyz")
+      expect(vm_host).to receive(:last_boot_id).and_return("xyz")
+      expect(vm_host).to receive(:reset).and_raise(IOError)
+      expect { nx.reset }.to nap(30)
+    end
+
+    it "reset updates last_boot_id and hops to verify_spdk" do
+      expect(nx).to receive(:get_boot_id).and_return("xyz")
+      expect(vm_host).to receive(:last_boot_id).and_return("abc")
+      expect(vm_host).to receive(:update).with(last_boot_id: "xyz")
+      expect { nx.reset }.to hop("verify_spdk")
+    end
+
   end
 
   describe "#verify_hugepages" do

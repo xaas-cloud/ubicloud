@@ -20,7 +20,7 @@ class VmHost < Sequel::Model
   include ResourceMethods
   include SemaphoreMethods
   include HealthMonitorMethods
-  semaphore :checkup, :reboot, :destroy
+  semaphore :checkup, :reboot, :hardware_reset, :destroy
 
   def host_prefix
     net6.netmask.prefix_len
@@ -239,7 +239,7 @@ class VmHost < Sequel::Model
     Hosting::Apis.set_server_name(self)
   end
 
-  def reset
+  def hardware_reset
     unless Config.development?
       fail "BUG: reset is only allowed in development"
     end

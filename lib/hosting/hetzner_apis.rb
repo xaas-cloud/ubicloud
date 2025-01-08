@@ -6,7 +6,7 @@ class Hosting::HetznerApis
     @host = hetzner_host
   end
 
-  def reset(server_id, hetzner_ssh_key: Config.hetzner_ssh_key, dist: "Ubuntu 22.04.2 LTS base")
+  def factory_reset(server_id, hetzner_ssh_key: Config.hetzner_ssh_key, dist: "Ubuntu 22.04.2 LTS base")
     unless hetzner_ssh_key
       raise "hetzner_ssh_key is not set"
     end
@@ -22,6 +22,24 @@ class Hosting::HetznerApis
     connection.post(path: "/boot/#{server_id}/linux",
       body: URI.encode_www_form(dist: dist, lang: "en", authorized_key: formatted_fingerprint),
       expects: 200)
+
+    connection.post(path: "/reset/#{server_id}", body: "type=hw", expects: 200)
+    nil
+  end
+
+  def reset(server_id, hetzner_ssh_key: Config.hetzner_ssh_key, dist: "Ubuntu 22.04.2 LTS base")
+    unless hetzner_ssh_key
+      raise "hetzner_ssh_key is not set"
+    end
+
+    key_data = hetzner_ssh_key.split(" ")[1]
+    decoded_data = Base64.decode64(key_data)
+    fingerprint = OpenSSL::Digest::MD5.new(decoded_data).hexdigest
+    formatted_fingerprint = fingerprint.scan(/../).join(":")
+    connection = Excon.new(@host.connection_string,
+      user: @host.user,
+      password: @host.password,
+      headers: {"Content-Type" => "application/x-www-form-urlencoded"})
 
     connection.post(path: "/reset/#{server_id}", body: "type=hw", expects: 200)
     nil

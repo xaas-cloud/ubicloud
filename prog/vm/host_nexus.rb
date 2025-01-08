@@ -156,6 +156,23 @@ class Prog::Vm::HostNexus < Prog::Base
     hop_verify_spdk
   end
 
+  label def prep_hardware_reset
+    register_deadline("wait", 3 * 60)
+    Clog.emit(">>>> prep_hardware_reset") { vm_host }
+
+    vm_host.vms_dataset.update(display_state: 'rebooting')
+
+    decr_hardware_reset
+
+    hop_hardware_reset
+  end
+
+  label def hardware_reset
+    Clog.emit(">>>> hardware_reset") { vm_host }
+    vm_host.hardware_reset
+    hop_reboot
+  end
+
   label def verify_spdk
     vm_host.spdk_installations.each { |installation|
       q_version = installation.version.shellescape
@@ -202,6 +219,10 @@ class Prog::Vm::HostNexus < Prog::Base
   label def wait
     when_reboot_set? do
       hop_prep_reboot
+    end
+
+    when_hardware_reset_set? do
+      hop_prep_hardware_reset
     end
 
     when_checkup_set? do

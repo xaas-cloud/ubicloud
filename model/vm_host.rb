@@ -239,7 +239,7 @@ class VmHost < Sequel::Model
     Hosting::Apis.set_server_name(self)
   end
 
-  def hardware_reset
+  def factory_reset
     unless Config.development?
       fail "BUG: reset is only allowed in development"
     end

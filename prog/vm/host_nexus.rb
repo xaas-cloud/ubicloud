@@ -157,8 +157,7 @@ class Prog::Vm::HostNexus < Prog::Base
   end
 
   label def prep_hardware_reset
-    register_deadline("wait", 3 * 60)
-    Clog.emit(">>>> prep_hardware_reset") { vm_host }
+    register_deadline("wait", 20 * 60)
 
     vm_host.vms_dataset.update(display_state: 'rebooting')
 
@@ -168,7 +167,6 @@ class Prog::Vm::HostNexus < Prog::Base
   end
 
   label def hardware_reset
-    Clog.emit(">>>> hardware_reset") { vm_host }
     vm_host.hardware_reset
     hop_reboot
   end

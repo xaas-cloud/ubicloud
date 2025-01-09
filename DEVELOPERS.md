@@ -489,7 +489,7 @@ We show cloudifying a host from Hetzner, but the principles should work everywhe
     ```ruby
     ENV["HETZNER_USER"] ||= HETZNER_ACCOUNT_ID 
     ENV["HETZNER_PASSWORD"] ||= HETZNER_ACCOUNT_PASS
-    ENV["HETZNER_SSH_KEY"] ||= YOUR_PUBLIC_SSH_KEY
+    ENV["HETZNER_SSH_PUBLIC_KEY"] ||= YOUR_PUBLIC_SSH_KEY
     ```
 
 2. In **terminal 1**, start the respirate process:

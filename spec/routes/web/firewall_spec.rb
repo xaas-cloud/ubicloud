@@ -47,7 +47,7 @@ RSpec.describe Clover, "firewall" do
         expect(page.title).to eq("Ubicloud - Firewalls")
         expect(page).to have_content "No firewalls"
 
-        click_link "New Firewall"
+        click_link "Create Firewall"
         expect(page.title).to eq("Ubicloud - Create Firewall")
       end
 

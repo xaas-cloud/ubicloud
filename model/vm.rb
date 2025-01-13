@@ -281,6 +281,7 @@ end
 #  provisioned_at | timestamp with time zone |
 #  vcpus          | integer                  | NOT NULL
 #  memory_gib     | integer                  | NOT NULL
+#  project_id     | uuid                     |
 # Indexes:
 #  vm_pkey               | PRIMARY KEY btree (id)
 #  vm_ephemeral_net6_key | UNIQUE btree (ephemeral_net6)

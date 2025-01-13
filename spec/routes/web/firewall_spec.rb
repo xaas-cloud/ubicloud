@@ -79,6 +79,19 @@ RSpec.describe Clover, "firewall" do
         link_texts = page.all("a").map(&:text)
         expect(link_texts).to include fw.name
         expect(link_texts).not_to include "Create Firewall"
+
+        click_link fw.name
+        expect(page).to have_no_content "Delete firewall"
+        expect(page.body).not_to include "form-fw-create-rule"
+
+        fw.add_firewall_rule(cidr: "127.0.0.1")
+        fw.add_private_subnet(net6: "::0/24", net4: "127.0.0.0/24", name: "dummy-ps", location: "somewhere")
+
+        page.refresh
+        expect(page.body).not_to include "private_subnet_id"
+        expect(page.body).not_to include "/detach-subnet\""
+        expect(page.body).not_to include "form-fw-create-rule-"
+        expect(page.body).not_to include "/firewall-rule/"
       end
 
       it "only shows New Firewall link on empty page if user has Firewall:create access" do
